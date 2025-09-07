@@ -1,21 +1,33 @@
 <script lang="ts">
 	import { BankerAlgorithm } from '$lib/banker/banker';
-	import { runAllTests } from '$lib/banker/banker.test';
 
+	// shadcn/ui components
+	import { Button } from '$lib/components/ui/button';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Separator } from '$lib/components/ui/separator';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert';
+	import * as Collapsible from '$lib/components/ui/collapsible';
+
+	// Default 3x3 matrices
 	let allocation = [
 		[0, 1, 0],
 		[2, 0, 0],
-		[3, 0, 2],
-		[2, 1, 1],
-		[0, 0, 2]
+		[3, 0, 2]
 	];
 
 	let max = [
 		[7, 5, 3],
 		[3, 2, 2],
-		[9, 0, 2],
-		[2, 2, 2],
-		[4, 3, 3]
+		[9, 0, 2]
 	];
 
 	let available = [3, 3, 2];
@@ -25,14 +37,73 @@
 		result = BankerAlgorithm(allocation, max, available);
 	}
 
-	function runTests() {
-		console.clear();
-		runAllTests();
+	function addRow() {
+		const numResources = allocation[0].length;
+		allocation = [...allocation, new Array(numResources).fill(0)];
+		max = [...max, new Array(numResources).fill(0)];
+		result = null;
+	}
+
+	function removeRow() {
+		if (allocation.length > 1) {
+			allocation = allocation.slice(0, -1);
+			max = max.slice(0, -1);
+			result = null;
+		}
+	}
+
+	function addColumn() {
+		allocation = allocation.map((row) => [...row, 0]);
+		max = max.map((row) => [...row, 0]);
+		available = [...available, 0];
+		result = null;
+	}
+
+	function removeColumn() {
+		if (allocation[0].length > 1) {
+			allocation = allocation.map((row) => row.slice(0, -1));
+			max = max.map((row) => row.slice(0, -1));
+			available = available.slice(0, -1);
+			result = null;
+		}
 	}
 
 	function loadExample(exampleNum: number) {
+		console.log('Loading example:', exampleNum);
+
+		// Clear any previous results
+		result = null;
+
 		switch (exampleNum) {
-			case 1: // Safe example
+			case 1: // Safe example (3x3) - Simple guaranteed safe
+				allocation = [
+					[1, 0, 1],
+					[2, 1, 0],
+					[0, 0, 1]
+				];
+				max = [
+					[3, 1, 2],
+					[4, 2, 1],
+					[1, 1, 2]
+				];
+				available = [2, 1, 1];
+				console.log('Set 3x3 safe example - allocation:', allocation);
+				break;
+			case 2: // Unsafe example (3x3)
+				allocation = [
+					[1, 0, 1],
+					[2, 1, 0],
+					[0, 0, 1]
+				];
+				max = [
+					[3, 1, 2],
+					[4, 2, 1],
+					[1, 1, 2]
+				];
+				available = [0, 0, 0]; // Not enough resources
+				console.log('Set 3x3 unsafe example - allocation:', allocation);
+				break;
+			case 3: // Large safe example (5x3)
 				allocation = [
 					[0, 1, 0],
 					[2, 0, 0],
@@ -48,26 +119,34 @@
 					[4, 3, 3]
 				];
 				available = [3, 3, 2];
+				console.log('Set 5x3 large example - allocation:', allocation);
 				break;
-			case 2: // Unsafe example
+			case 4: // Complex 4x4 example
 				allocation = [
-					[0, 1, 0],
-					[2, 0, 0],
-					[3, 0, 2],
-					[2, 1, 1],
-					[0, 0, 2]
+					[1, 0, 2, 1],
+					[2, 1, 0, 0],
+					[0, 2, 1, 2],
+					[1, 1, 0, 1]
 				];
 				max = [
-					[7, 5, 3],
-					[3, 2, 2],
-					[9, 0, 2],
-					[2, 2, 2],
-					[4, 3, 3]
+					[3, 2, 4, 2],
+					[4, 3, 2, 1],
+					[2, 4, 3, 4],
+					[3, 3, 2, 2]
 				];
-				available = [1, 0, 0];
+				available = [2, 1, 2, 1];
+				console.log('Set 4x4 complex example - allocation:', allocation);
 				break;
 		}
-		result = null;
+
+		// Force Svelte reactivity by creating new array references
+		allocation = allocation.map((row) => [...row]);
+		max = max.map((row) => [...row]);
+		available = [...available];
+
+		console.log('Final allocation after reactivity update:', allocation);
+		console.log('Final max after reactivity update:', max);
+		console.log('Final available after reactivity update:', available);
 	}
 </script>
 
@@ -75,256 +154,195 @@
 	<title>Banker's Algorithm Demo</title>
 </svelte:head>
 
-<div class="container">
-	<h1>🏦 Banker's Algorithm Simulator</h1>
-
-	<div class="examples">
-		<button on:click={() => loadExample(1)} class="btn btn-primary"> Load Safe Example </button>
-		<button on:click={() => loadExample(2)} class="btn btn-secondary"> Load Unsafe Example </button>
-		<button on:click={runTests} class="btn btn-accent"> Run All Tests (Check Console) </button>
+<div class="container mx-auto p-6 max-w-7xl">
+	<div class="text-center mb-8">
+		<h1 class="text-4xl font-bold text-primary mb-2">🏦 Banker's Algorithm Simulator</h1>
+		<p class="text-muted-foreground">Interactive deadlock avoidance algorithm demonstration</p>
 	</div>
 
-	<div class="matrices">
-		<div class="matrix-section">
-			<h3>Allocation Matrix</h3>
-			<div class="matrix">
-				{#each allocation as row, i}
-					<div class="matrix-row">
-						<span class="process-label">P{i}:</span>
-						{#each row as cell, j}
-							<input bind:value={allocation[i][j]} type="number" min="0" />
-						{/each}
+	<!-- Bento Grid Layout -->
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+		<!-- Left Column: Controls -->
+		<div class="lg:col-span-1 space-y-6">
+			<!-- Quick Examples -->
+			<Card>
+				<CardHeader>
+					<CardTitle>Quick Examples</CardTitle>
+					<CardDescription>Load predefined scenarios</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div class="grid grid-cols-1 gap-2">
+						<Button onclick={() => loadExample(1)} variant="default" size="sm">3×3 Safe</Button>
+						<Button onclick={() => loadExample(2)} variant="secondary" size="sm">3×3 Unsafe</Button>
+						<Button onclick={() => loadExample(3)} variant="outline" size="sm">5×3 Large</Button>
+						<Button onclick={() => loadExample(4)} variant="ghost" size="sm">4×4 Complex</Button>
 					</div>
-				{/each}
-			</div>
-		</div>
+				</CardContent>
+			</Card>
 
-		<div class="matrix-section">
-			<h3>Max Matrix</h3>
-			<div class="matrix">
-				{#each max as row, i}
-					<div class="matrix-row">
-						<span class="process-label">P{i}:</span>
-						{#each row as cell, j}
-							<input bind:value={max[i][j]} type="number" min="0" />
-						{/each}
+			<!-- Matrix Controls -->
+			<Card>
+				<CardHeader>
+					<CardTitle>Matrix Controls</CardTitle>
+					<CardDescription>Adjust dimensions</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div class="grid grid-cols-2 gap-2 mb-4">
+						<Button onclick={addRow} variant="outline" size="sm">➕ Process</Button>
+						<Button onclick={removeRow} variant="outline" size="sm">➖ Process</Button>
+						<Button onclick={addColumn} variant="outline" size="sm">➕ Resource</Button>
+						<Button onclick={removeColumn} variant="outline" size="sm">➖ Resource</Button>
 					</div>
-				{/each}
-			</div>
+					<div class="text-center">
+						<Badge variant="secondary" class="text-xs">
+							{allocation.length} × {allocation[0].length}
+						</Badge>
+					</div>
+				</CardContent>
+			</Card>
 		</div>
 
-		<div class="matrix-section">
-			<h3>Available Resources</h3>
-			<div class="matrix-row">
-				{#each available as resource, i}
-					<input bind:value={available[i]} type="number" min="0" />
-				{/each}
-			</div>
-		</div>
-	</div>
-
-	<button on:click={runAlgorithm} class="btn btn-large btn-primary">
-		🚀 Run Banker's Algorithm
-	</button>
-
-	{#if result}
-		<div class="result {result.isSafe ? 'safe' : 'unsafe'}">
-			<h3>{result.isSafe ? '✅ System is SAFE' : '❌ System is UNSAFE'}</h3>
-
-			{#if result.isSafe}
-				<p><strong>Safe Sequence:</strong> P{result.sequence.join(' → P')}</p>
-			{:else}
-				<p><strong>Deadlock detected!</strong></p>
-				<p><strong>Partial Sequence:</strong> P{result.sequence.join(' → P')} → ?</p>
-			{/if}
-
-			<details>
-				<summary>Available Resources Timeline</summary>
-				<div class="timeline">
-					{#each result.availableSequence as available, i}
-						<div class="timeline-item">
-							<strong>Step {i}:</strong> [{available.join(', ')}]
-							{#if i > 0}
-								<span class="process-executed">After P{result.sequence[i - 1]} completes</span>
-							{:else}
-								<span class="process-executed">Initial state</span>
-							{/if}
+		<!-- Right Column: Matrices -->
+		<div class="lg:col-span-2 space-y-6">
+			<!-- Allocation & Max Matrices -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<!-- Allocation Matrix -->
+				<Card>
+					<CardHeader>
+						<CardTitle class="text-lg">Allocation Matrix</CardTitle>
+						<CardDescription>Current allocations</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div class="space-y-2">
+							{#each allocation as row, i}
+								<div class="flex items-center gap-2">
+									<Label class="min-w-6 font-mono text-xs">P{i}:</Label>
+									{#each row as cell, j}
+										<Input
+											bind:value={allocation[i][j]}
+											type="number"
+											min="0"
+											class="w-12 h-8 text-center text-sm"
+										/>
+									{/each}
+								</div>
+							{/each}
 						</div>
-					{/each}
-				</div>
-			</details>
+					</CardContent>
+				</Card>
+
+				<!-- Max Matrix -->
+				<Card>
+					<CardHeader>
+						<CardTitle class="text-lg">Max Matrix</CardTitle>
+						<CardDescription>Maximum requirements</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div class="space-y-2">
+							{#each max as row, i}
+								<div class="flex items-center gap-2">
+									<Label class="min-w-6 font-mono text-xs">P{i}:</Label>
+									{#each row as cell, j}
+										<Input
+											bind:value={max[i][j]}
+											type="number"
+											min="0"
+											class="w-12 h-8 text-center text-sm"
+										/>
+									{/each}
+								</div>
+							{/each}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+
+			<!-- Available Resources -->
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-lg">Available Resources</CardTitle>
+					<CardDescription>Currently available instances</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div class="flex items-center gap-3 justify-center">
+						{#each available as resource, i}
+							<div class="flex flex-col items-center gap-1">
+								<Label class="text-xs text-muted-foreground">R{i}</Label>
+								<Input
+									bind:value={available[i]}
+									type="number"
+									min="0"
+									class="w-12 h-8 text-center text-sm"
+								/>
+							</div>
+						{/each}
+					</div>
+				</CardContent>
+			</Card>
+
+			<!-- Run Algorithm Button -->
+			<div class="text-center">
+				<Button
+					onclick={runAlgorithm}
+					size="lg"
+					class="text-xl px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full"
+				>
+					🚀 Run Banker's Algorithm
+				</Button>
+			</div>
 		</div>
+	</div>
+
+	<!-- Results -->
+	{#if result}
+		{#if result.isSafe}
+			<Alert class="border-green-200 bg-green-50">
+				<AlertTitle class="text-green-800">✅ System is SAFE</AlertTitle>
+				<AlertDescription class="text-green-700">
+					<strong>Safe Sequence:</strong> P{result.sequence.join(' → P')}
+				</AlertDescription>
+			</Alert>
+		{:else}
+			<Alert variant="destructive">
+				<AlertTitle>❌ System is UNSAFE</AlertTitle>
+				<AlertDescription>
+					<strong>Deadlock detected!</strong><br />
+					<strong>Partial Sequence:</strong> P{result.sequence.join(' → P')} → ?
+				</AlertDescription>
+			</Alert>
+		{/if}
+
+		<Card class="mt-4">
+			<Collapsible.Root>
+				<Collapsible.Trigger class="w-full">
+					<CardHeader class="cursor-pointer hover:bg-muted/50 transition-colors">
+						<div class="flex items-center justify-between">
+							<CardTitle>Available Resources Timeline</CardTitle>
+							<span class="text-xs text-muted-foreground">Click to expand</span>
+						</div>
+					</CardHeader>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<CardContent>
+						<div class="space-y-2">
+							{#each result.availableSequence as availableRes, i}
+								<div class="flex items-center justify-between p-3 bg-muted rounded-lg">
+									<span class="font-mono"
+										><strong>Step {i}:</strong> [{availableRes.join(', ')}]</span
+									>
+									<Badge variant="outline">
+										{#if i > 0}
+											After P{result.sequence[i - 1]} completes
+										{:else}
+											Initial state
+										{/if}
+									</Badge>
+								</div>
+							{/each}
+						</div>
+					</CardContent>
+				</Collapsible.Content>
+			</Collapsible.Root>
+		</Card>
 	{/if}
 </div>
-
-<style>
-	.container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 2rem;
-		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-	}
-
-	h1 {
-		text-align: center;
-		color: #2563eb;
-		margin-bottom: 2rem;
-	}
-
-	.examples {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		margin-bottom: 2rem;
-	}
-
-	.btn {
-		padding: 0.75rem 1.5rem;
-		border: none;
-		border-radius: 0.5rem;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.2s;
-	}
-
-	.btn-primary {
-		background: #2563eb;
-		color: white;
-	}
-
-	.btn-secondary {
-		background: #6b7280;
-		color: white;
-	}
-
-	.btn-accent {
-		background: #7c3aed;
-		color: white;
-	}
-
-	.btn-large {
-		font-size: 1.1rem;
-		padding: 1rem 2rem;
-		display: block;
-		margin: 2rem auto;
-	}
-
-	.btn:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	}
-
-	.matrices {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
-		margin-bottom: 2rem;
-	}
-
-	.matrix-section:last-child {
-		grid-column: 1 / -1;
-		justify-self: center;
-	}
-
-	.matrix-section h3 {
-		color: #374151;
-		margin-bottom: 1rem;
-		text-align: center;
-	}
-
-	.matrix {
-		background: #f9fafb;
-		padding: 1rem;
-		border-radius: 0.5rem;
-		border: 2px solid #e5e7eb;
-	}
-
-	.matrix-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.process-label {
-		font-weight: 600;
-		min-width: 2rem;
-		color: #374151;
-	}
-
-	input {
-		width: 3rem;
-		padding: 0.5rem;
-		border: 1px solid #d1d5db;
-		border-radius: 0.25rem;
-		text-align: center;
-	}
-
-	input:focus {
-		outline: none;
-		border-color: #2563eb;
-		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-	}
-
-	.result {
-		margin-top: 2rem;
-		padding: 1.5rem;
-		border-radius: 0.5rem;
-		border-left: 4px solid;
-	}
-
-	.result.safe {
-		background: #ecfdf5;
-		border-color: #10b981;
-	}
-
-	.result.unsafe {
-		background: #fef2f2;
-		border-color: #ef4444;
-	}
-
-	.result h3 {
-		margin: 0 0 1rem 0;
-	}
-
-	.timeline {
-		margin-top: 1rem;
-	}
-
-	.timeline-item {
-		padding: 0.5rem;
-		background: white;
-		border-radius: 0.25rem;
-		margin-bottom: 0.5rem;
-		border: 1px solid #e5e7eb;
-	}
-
-	.process-executed {
-		color: #6b7280;
-		font-size: 0.9rem;
-		margin-left: 1rem;
-	}
-
-	details {
-		margin-top: 1rem;
-	}
-
-	summary {
-		cursor: pointer;
-		font-weight: 600;
-		padding: 0.5rem;
-		background: rgba(255, 255, 255, 0.5);
-		border-radius: 0.25rem;
-	}
-
-	@media (max-width: 768px) {
-		.matrices {
-			grid-template-columns: 1fr;
-		}
-
-		.examples {
-			flex-direction: column;
-			align-items: center;
-		}
-	}
-</style>

@@ -130,7 +130,7 @@ function runAllTests() {
 	];
 
 	let passed = 0;
-	let total = tests.length;
+	const total = tests.length;
 
 	tests.forEach((test) => {
 		try {
