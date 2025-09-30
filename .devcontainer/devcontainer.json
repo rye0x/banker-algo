@@ -1,1 +1,63 @@
-{"features":{"ghcr.io/devcontainers/features/sshd:1":{"version":"latest"}}}
+{
+	"name": "Banker Algorithm - SvelteKit Dev",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/sshd:1": {
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/git:1": {
+			"version": "latest",
+			"ppa": false
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"version": "latest"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"bradlc.vscode-tailwindcss",
+				"ms-playwright.playwright",
+				"vitest.explorer"
+			],
+			"settings": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.formatOnSave": true,
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": "explicit"
+				},
+				"eslint.validate": ["javascript", "typescript", "svelte"],
+				"[svelte]": {
+					"editor.defaultFormatter": "svelte.svelte-vscode"
+				},
+				"tailwindCSS.experimental.classRegex": [["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]],
+				"files.associations": {
+					"*.css": "tailwindcss"
+				}
+			}
+		}
+	},
+	"forwardPorts": [5173, 4173],
+	"portsAttributes": {
+		"5173": {
+			"label": "Dev Server",
+			"onAutoForward": "notify"
+		},
+		"4173": {
+			"label": "Preview Server",
+			"onAutoForward": "silent"
+		}
+	},
+	"postCreateCommand": "npm install",
+	"postStartCommand": "npm run prepare",
+	"remoteUser": "node",
+	"mounts": [
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached"
+	],
+	"remoteEnv": {
+		"NODE_ENV": "development"
+	}
+}
